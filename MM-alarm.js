@@ -7,7 +7,7 @@
  * MIT Licensed.
  */
 
-Module.register("alarm",{
+Module.register("MM-alarm",{
 
 	// Default module config.
 	defaults: {
@@ -31,6 +31,7 @@ Module.register("alarm",{
 		moment.locale(config.language);
 		this.sounds = [];
     this.current_sound = 0;
+    this.config.sounds = this.config.sounds || ["/modules/MM-alarm/trash.mp3"];
     if (typeof this.config.sounds === "string") { this.config.sounds = [this.config.sounds] }
     for (var i=0; i<this.config.sounds.length; i++) {
       var audio = document.createElement(audio);
@@ -39,6 +40,8 @@ Module.register("alarm",{
       this.sounds.push(audio);
     }
     document.addEventListener("onkeypress",this.stop.bind(this));
+    this.createAlarms();
+    this.scheduleUpdateInterval();
 	},
   play: function() {
     if (this.current_sound >= this.sounds.length) { this.current_sound = 0; }
@@ -51,47 +54,58 @@ Module.register("alarm",{
       this.sounds.stop();
     }
   },
-    
+
+  createAlarms: function() {
+    this.bad_times = [];
+    var times = this.config.times || {};
+    this.alarms = [[],[],[],[],[],[],[],]; // 7 empty arrays for 7 days... Sunday = 0
+    var multi_days = {
+      sunday: [0],
+      monday: [1],
+      tuesday: [2],
+      wednesday: [3],
+      thursday: [4],
+      friday: [5],
+      saturday: [6],
+      all_week: [0,1,2,3,4,5,6],
+      weekends: [0,6],
+      weekdays: [1,2,3,4,5]
+    };
+    for (key in multi_days) {
+      var times = this.parseTimes(this.config.times[key]);
+      for (var i=0;i<multi_days[key].length;i++) {
+        for (var j=0;j<times.length;j++) { this.alarms[multi_days[key][i]].push(times[j]); }
+      }
+    }
+  },
+
+  parseTimes: function(time_list) {
+    if (typeof time_list === "string") { time_list = [time_list] }
+    var out = [];
+    for (var j=0;j<time_list.length;j++) {
+      var s = time_list[j];
+      var h = parseInt(s.split(":")[0]);
+      var m = parseInt(s.split(":")[1]);
+      if (h === NaN || m === NaN) {
+        if (this.bad_times.indexOf(s) == -1) { this.bad_times.push(s); }
+        continue;
+      }
+      if (s.toLowerCase().indexOf('p') != -1) { h += 12 }
+      out.push(h+":"+m);
+    }
+    return out;
+  },
 
 	// Override dom generator.
 	getDom: function() {
-		var wrapper = document.createElement("div");
-		wrapper.style.width = (this.config.width || '500') + 'px';
-		this.tweets = this.tweets || [];
-		if (this.activeItem >= this.tweets.length) {
-			wrapper.innerHTML = this.translate("LOADING");
-			wrapper.className = "small dimmed";
-			this.activeItem = 0;
-		}
-
-		if (this.tweets.length == 0) {
-			return wrapper;
-		}
-
-		var tweet = this.tweets[this.activeItem];
-		var i = "<i class='fa fa-twitter bright'></i>";
-		var top = document.createElement("div");
-		top.appendChild(this.createElement("b",i+"@"+tweet.user.screen_name));
-		
-		var time = document.createElement("span");
-		time.innerHTML = moment(new Date(tweet.created_at)).format("lll");
-		time.className = "small";
-		time.style.paddingLeft = "20px";
-		top.appendChild(time);
-		wrapper.appendChild(top);
-		wrapper.appendChild(this.createElement("div",tweet.text,{className: "small"}));
-
+    var wrapper = document.createElement("div");
 		return wrapper;
 	},
 
 	scheduleUpdateInterval: function() {
 		var self = this;
-
-		self.updateDom(self.config.animationSpeed);
-
 		setInterval(function() {
-			self.activeItem++;
 			self.updateDom(self.config.animationSpeed);
-		}, this.config.updateInterval);
+		}, 60*1000);
 	},
 });
