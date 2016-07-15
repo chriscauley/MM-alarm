@@ -29,6 +29,7 @@ Module.register("MM-alarm",{
 
 		// Set locale.
 		moment.locale(config.language);
+    this.last_alarm = moment();
 		this.sounds = [];
     this.current_sound = 0;
     this.config.sounds = this.config.sounds || ["/modules/MM-alarm/trash.mp3"];
@@ -90,15 +91,45 @@ Module.register("MM-alarm",{
         if (this.bad_times.indexOf(s) == -1) { this.bad_times.push(s); }
         continue;
       }
+      m = m || 0; // if m is undefined set it to zero, so people can write "1p"
       if (s.toLowerCase().indexOf('p') != -1) { h += 12 }
-      out.push(h+":"+m);
+      out.push([h,m]);
     }
     return out;
+  },
+
+  findNextAlarm: function(alarms) {
+    var next_alarm = undefined;
+    for (var i=0;i<alarms.length;i++) {
+      var m = moment().hour(alarms[i][0]).minute(alarms[i][1]);
+      if (m<this.last_alarm) { continue; } // this alarm has been used or program was started after this alarm
+      if (!next_alarm || m < next_alarm) { next_alarm = m };
+    }
+    return next_alarm;
   },
 
 	// Override dom generator.
 	getDom: function() {
     var wrapper = document.createElement("div");
+    wrapper.innerHTML = "Sound the alarm!!";
+    if (this.playing) { return wrapper; }
+    var now = new Date();
+    var next_alarm = this.findNextAlarm(this.alarms[now.getUTCDay()]);
+    if (next_alarm) {
+      if (next_alarm <= moment()) { //trigger the alarm!
+        this.last_alarm = moment();
+        this.playing = true;
+        return wrapper;
+      }
+      wrapper.innerHTML = "Next alarm at: " + next_alarm.format("h:mm a");
+    } else {
+    next_alarm = this.findNextAlarm(this.alarms[(1+now.getUTCDay())%7]);
+      if (next_alarm) {
+        wrapper.innerHTML = "Alarm tomorrow at: " + next_alarm.format("h:mm a");
+      } else {
+        wrapper.innerHTML = "No alarm today or tomorrow";
+      }
+    }
 		return wrapper;
 	},
 
@@ -106,6 +137,6 @@ Module.register("MM-alarm",{
 		var self = this;
 		setInterval(function() {
 			self.updateDom(self.config.animationSpeed);
-		}, 60*1000);
+		}, 10*1000);
 	},
 });
