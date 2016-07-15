@@ -1,40 +1,41 @@
-# Module: Tweet Feed
+# Module: MM-Alarm
 
-The `tweet_feed` displays your twitter home statuses. Copy and paste the module config below and then add your Twitter keys to the key dictionary in the config.
+A simple alarm clock for magic mirror. Any keypress shuts off the alarm. Clone this repo to your modules directory and replace the alarm.mp3 file with your own. Then copy the config over, change the position, and set the times for each of the days. Times can be set at the weekday level or bulk times are available for all_days, weekdays, and weekends. Most time formats should be acceptable. The rules for time formats are:
 
-This module has one dependency:
+* A number before the (optional) colon is the hour. '8:00' and '8' both are parsed as "eight in the morning"
 
-`npm install twitter`
+* The number after the (optional) colon is the minute. 
 
-## Module Config Example
+* If the string contains a "p" anywhere, 12 is added to the hour.
 
-To use this module, add it to the modules array in the `config/config.js` file:
-````javascript
-modules: [
-	{
-		module: 'twitter',
-		position: 'bottom_bar',
-		config: {
-			width: "", // width in pixels of box. Defaults to 500.
-			keys: {
-				consumer_key: '',
-				consumer_secret: '',
-				access_token_key: '',
-				access_token_secret: '',
-			}
-		}
-	}
-]
-````
+* Error catching on times may not be great, so weird times may break the mirror or wake you up at odd hours. Caveat emptor.
 
-## Create Twitter API Keys
+## Sample config
 
-To use the Twitter API you need to log into twitter and get a private key. This unique code tells twitter that you have given any program posessing these keys permission to access your account.
+This will have alarms every day of the week at 3am, 8am, 8:15am, 6:30pm, and 7:pm.
 
-1) *Create Application* - Go to https://apps.twitter.com/, login, click "Create new app" (top right corner), and fill out the form. If you don't have a website, just enter "http://example.com".
+```javascript
+		{
+			module: 'MM-alarm',
+			position: "lower_third",
+			config: {
+				times: {
+					sunday: [],
+					monday: [],
+					tuesday: [],
+					wednesday: [],
+					thursday: [],
+					friday: [],
+					saturday: [],
+					weekdays: [],
+					weekends: [],
+					all_week: ['8:15','6:30PM','19:00','8am','3'],
+				}
+			},
+		},
+```
 
-2) *Generate Keys* - You should be redirected to the settings page for your new application. Click the "Keys and Access Tokens" tab. Scroll down to "Token Actions" and click "Create Token".
+## TODO:
 
-3) *Configure mirror* - Open your application config file, `config/config.js`, in your favorite code editor. And add the module config from the previou section to the list of modules.
-
-4) *Copy Tokens to the Config* - Copy the consumer key, consumer secret, access token, and access token secret to the appropriate places in the module config you copied from step 3.
+* Better styling options.
+* Snooze button.
