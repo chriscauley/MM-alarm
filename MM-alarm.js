@@ -32,15 +32,17 @@ Module.register("MM-alarm",{
 		this.last_alarm = moment();
 		this.sounds = [];
 		this.current_sound = 0;
-		this.config.sounds = this.config.sounds || ["/modules/MM-alarm/trash.mp3"];
+		this.config.sounds = this.config.sounds || ["/modules/MM-alarm/alarm.mp3"];
 		if (typeof this.config.sounds === "string") { this.config.sounds = [this.config.sounds] }
 		for (var i=0; i<this.config.sounds.length; i++) {
-			var audio = document.createElement(audio);
+			var audio = document.createElement("audio");
 			audio.src = this.config.sounds[i];
 			audio.volume = this.config.volume || 1;
+			audio.loop = true;
 			this.sounds.push(audio);
+			document.body.appendChild(audio);
 		}
-		document.addEventListener("onkeypress",this.stop.bind(this));
+		document.addEventListener("keypress",this.stop.bind(this));
 		this.createAlarms();
 		this.scheduleUpdateInterval();
 	},
@@ -49,11 +51,16 @@ Module.register("MM-alarm",{
 		this.sounds[this.current_sound].play();
 		this.current_sound ++;
 		setInterval(this.stop.bind(this),(this.config.alarm_minutes || 1)*60*1000)
+		this.playing = true;
 	},
-	stop: function() {
+	stop: function(e) {
+		if (!this.playing) { return e; }
 		for (var i=0; i<this.sounds.length; i++) {
-			this.sounds.stop();
+			this.sounds[i].pause();
+			this.sounds[i].current_time = 0;
 		}
+		this.playing = false;
+		this.updateDom();
 	},
 
 	createAlarms: function() {
@@ -114,14 +121,16 @@ Module.register("MM-alarm",{
 			wrapper.innerHTML = "The following time(s) are invalid: "+(this.bad_times.join(", "));
 			return wrapper;
 		}
-		wrapper.innerHTML = "Sound the alarm!!";
-		if (this.playing) { return wrapper; }
+		if (this.playing) {
+			wrapper.innerHTML = "Sound the alarm!!";
+			return wrapper;
+		}
 		var now = new Date();
 		var next_alarm = this.findNextAlarm(this.alarms[now.getUTCDay()]);
 		if (next_alarm) {
 			if (next_alarm <= moment()) { //trigger the alarm!
 				this.last_alarm = moment();
-				this.playing = true;
+				this.play();
 				return wrapper;
 			}
 			wrapper.innerHTML = "Next alarm at: " + next_alarm.format("h:mm a");
