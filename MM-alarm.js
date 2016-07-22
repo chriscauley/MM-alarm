@@ -104,10 +104,11 @@ Module.register("MM-alarm",{
 		return out;
 	},
 
-	findNextAlarm: function(alarms) {
+	findNextAlarm: function(alarms,days) {
+		days = days || 0;
 		var next_alarm = undefined;
 		for (var i=0;i<alarms.length;i++) {
-			var m = moment().hour(alarms[i][0]).minute(alarms[i][1]);
+			var m = moment().hour(alarms[i][0]).minute(alarms[i][1]).add(days,"days");
 			if (m<this.last_alarm) { continue; } // this alarm has been used or program was started after this alarm
 			if (!next_alarm || m < next_alarm) { next_alarm = m };
 		}
@@ -135,7 +136,7 @@ Module.register("MM-alarm",{
 			}
 			wrapper.innerHTML = "Next alarm at: " + next_alarm.format("h:mm a");
 		} else {
-		next_alarm = this.findNextAlarm(this.alarms[(1+now.getUTCDay())%7]);
+			next_alarm = this.findNextAlarm(this.alarms[(1+now.getUTCDay())%7],1);
 			if (next_alarm) {
 				wrapper.innerHTML = "Alarm tomorrow at: " + next_alarm.format("h:mm a");
 			} else {
